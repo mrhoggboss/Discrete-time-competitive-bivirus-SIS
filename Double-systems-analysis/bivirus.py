@@ -4,18 +4,19 @@ import matplotlib.pyplot as plt
 # Some useful functions for the simulation
 
 class SimulationConfig:
-    def __init__(self, N=20, h=0.1, W=2, iterations=10000):
+    def __init__(self, N=20, h=0.1, W=2, iterations=1000, tolerance=1e-3):
         self.N = N
         self.h = h
         self.W = W
-        self.iterations = iterations
+        self.iterations = iterations # max iterations before stopping
+        self.tolerance = tolerance # tolerance for convergence
 
 def run_simulation(x1, x2, B, delta, config):
     N, h, iterations = config.N, config.h, config.iterations
     x1_history, x2_history = [x1.copy()], [x2.copy()]
     x1_avg_history, x2_avg_history = [np.average(x1)], [np.average(x2)]
     x = [x1, x2]
-    for _ in range(iterations):
+    for i in range(iterations):
         sum_of_x = np.diag(x[0]) + np.diag(x[1])
         x[0] = x[0] + h * ((np.eye(N) - sum_of_x) @ B[0] - np.diag(delta[0])) @ x[0]
         x[1] = x[1] + h * ((np.eye(N) - sum_of_x) @ B[1] - np.diag(delta[1])) @ x[1]
@@ -23,6 +24,12 @@ def run_simulation(x1, x2, B, delta, config):
         x2_history.append(x[1].copy())
         x1_avg_history.append(np.average(x[0]))
         x2_avg_history.append(np.average(x[1]))
+        if np.linalg.norm(x1_history[-1] - x1_history[-2]) < config.tolerance and np.linalg.norm(x2_history[-1] - x2_history[-2]) < config.tolerance:
+            print(f"Converged at iteration {i}")
+            break
+    if i == iterations - 1:
+        print("Reached max iterations and did not converge")
+
     return {
         "x1_history": x1_history,
         "x2_history": x2_history,
