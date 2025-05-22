@@ -104,9 +104,9 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
     fig.suptitle(f'Average Infection level VS Time')
     plt.show()
 
-def check_assumptions(x1, x2, B, delta, config):
+def check_basic_assumptions(x1, x2, B, delta, config):
     """
-    Check the assumptions of the paper
+    Check the basic assumptions of the paper, i.e., Assumptions 1-6
     """
     # Assumption 1: initial portion of infection of both virus must be between 0 and 1, and initial portion of the healthy must be between 0 and 1
     
@@ -178,3 +178,59 @@ def check_assumptions(x1, x2, B, delta, config):
         print("delta2: ", delta[1])
     
     print("All assumptions satisfied")
+
+# TODO: implement individual checks for each theorem instead of single check for all
+
+def check_theorem_assumptions(B, delta, config, x1_bar, x2_bar):
+    """
+    Check the assumptions of the theorems, i.e., Theorems 2, 3, 4, 6, 7
+    
+    B: list of two matrices, each of size N x N
+    delta: list of two vectors, each of size N
+    config: SimulationConfig object
+    x1_bar: size N vector representing equilibrium infection levels of virus 1
+    x2_bar: size N vector representing equilibrium infection levels of virus 2
+
+    returns a float that is the theorem number that the model satisfies the assumptions for:
+    2: theorem 2
+    3: theorem 3
+    4.1: theorem 4, virus 1 stable, virus 2 stable
+    4.2: theorem 4, virus 1 stable, virus 2 unstable
+    4.3: theorem 4, virus 1 unstable, virus 2 stable
+    4.4: theorem 4, virus 1 unstable, virus 2 unstable
+
+    """
+    spectral_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + config.h * B[0])))
+    spectral_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + config.h * B[1])))
+
+    print('spectral radius 1 is '+str(spectral_radius_1))
+    print('spectral radius 2 is '+str(spectral_radius_2))
+
+    if spectral_radius_1 <= 1 and spectral_radius_2 <= 1:
+        return 2
+    elif spectral_radius_1 > 1 and spectral_radius_2 <= 1:
+        return 3
+    elif spectral_radius_1 <= 1 and spectral_radius_2 > 1:
+        return 3
+    else:
+        det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[0])))
+        det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[1])))
+        
+        print('det radius 1 is '+str(det_radius_1))
+        print('det radius 2 is '+str(det_radius_2))
+
+        if det_radius_1 <= 1 and det_radius_2 <= 1:
+            label = 4.1
+            # 1) both (x_1, 0) and (0, x_2) are stable
+            # 2) also exists (x_1hat, x_2hat) which is unstable (theorem 5, not validated in simulations)
+        elif det_radius_1 > 1 and det_radius_2 > 1:
+            label = 4.4
+            # 1) both (x_1, 0) and (0, x_2) are unstable
+        elif det_radius_1 <= 1 and det_radius_2 > 1:
+            label = 4.2
+            # 1) (x_1, 0) stable 
+            # 2) (0, x_2) unstable
+        elif det_radius_1 > 1 and det_radius_2 <= 1:
+            label = 4.3
+            # 1) (x_1, 0) unstable 
+            # 2) (0, x_2) stable
