@@ -4,14 +4,11 @@ import matplotlib.pyplot as plt
 # Some useful functions for the simulation
 
 class SimulationConfig:
-    def __init__(self, N=20, h=0.1, W=2, iterations=10000, seed=None):
+    def __init__(self, N=20, h=0.1, W=2, iterations=10000):
         self.N = N
         self.h = h
         self.W = W
         self.iterations = iterations
-        self.seed = seed
-        if seed is not None:
-            np.random.seed(seed)
 
 def run_simulation(x1, x2, B, delta, config):
     N, h, iterations = config.N, config.h, config.iterations
@@ -36,6 +33,11 @@ def run_simulation(x1, x2, B, delta, config):
     }
 
 def random_parameters(config):
+    '''
+    generate random parameters for the simulation based on the config
+    config: SimulationConfig object
+    returns: a tuple of two lists, each containing the parameters for one virus
+    '''
     N, W = config.N, config.W
     A1, A2 = np.random.uniform(0, W, (N, N)), np.random.uniform(0, W, (N, N))
     delta_1 = np.random.uniform(0, 1, N)
@@ -59,7 +61,7 @@ def plot_average_infection(x1_avg_history, x2_avg_history, title="Average Infect
     plt.text(len(x2_avg_history)-1, x2_avg_history[-1], f"{x2_avg_history[-1]:.2f}", color='r', fontsize=10, va='bottom')
     plt.show()
 
-def plot_simulation_3by3(x1_avg_histories, x2_avg_histories):
+def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
     '''
     x1_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 1
     x2_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 2
@@ -84,16 +86,8 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories):
             col.text(iterations, x1_history[-1], f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
             col.text(iterations, x2_history[-1], f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
             
-            # if abs(x1_history[-1] - x2_history[-1]) > 0.1:
-                # col.text(iterations, x1_history[-1], f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
-                # col.text(iterations, x2_history[-1], f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
-            # elif x1_history[-1] > x2_history[-1]:
-            #     col.text(iterations, x1_history[-1] + 0.05, f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
-            #     col.text(iterations, x2_history[-1] - 0.05, f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
-            # elif x1_history[-1] <= x2_history[-1]:
-            #     col.text(iterations, x1_history[-1] - 0.05, f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
-            #     col.text(iterations, x2_history[-1] + 0.05, f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
-            col.set_yscale('log')
+            col.set_ylim(0.01, 1)
+            col.set_yscale(yscale)
             col.set(xlabel='Time step', ylabel='Avg. Infection level')
             col.label_outer()
     ax = plt.gca()
@@ -102,3 +96,78 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories):
         
     fig.suptitle(f'Average Infection level VS Time')
     plt.show()
+
+def check_assumptions(x1, x2, B, delta, config):
+    """
+    Check the assumptions of the paper
+    """
+    # Assumption 1: initial portion of infection of both virus must be between 0 and 1, and initial portion of the healthy must be between 0 and 1
+    
+    # This needs to be satisfied for all theorems
+    for i in range(config.N):
+        assert(0 <= x1[i] <= 1, "A1, x1[i] out of bounds")
+        assert(0 <= x2[i] <= 1, "A1, x2[i] out of bounds")
+        assert(0 <= 1 - x1[i] - x2[i] <= 1, "A1, healthy[i] out of bounds")
+    
+    # Assumption 2: Non-negative B and deltas
+
+    # This needs to be satisfied for all theorems
+    for i in range(config.N):
+        assert(delta[0][i] >= 0, "A2, delta[0][i] negative")
+        assert(delta[1][i] >= 0, "A2, delta[1][i] negative")
+    for i in range(config.N):
+        for j in range(config.N):
+            assert(B[0][i][j] >= 0, "A2, B[0][i][j] negative")
+            assert(B[1][i][j] >= 0, "A2, B[1][i][j] negative")
+    
+    # Assumption 3: sampling parameter upper bound
+
+    # This needs to be satisfied for all theorems
+    for i in range(config.N):
+        assert(config.h * delta[0][i] < 1, "A3, h * delta[0][i] >= 1")
+        assert(config.h * delta[1][i] < 1, "A3, h * delta[1][i] >= 1")
+    
+    for i in range(config.N):
+        row_sum1 = sum(B[0][i])
+        row_sum2 = sum(B[1][i])
+        assert(config.h * (row_sum1 + row_sum2) <= 1, "A3, h * (row_sum1 + row_sum2) > 1")
+    
+    # Assumption 4: nonzero B, sampling parameter and nontrivial dimension
+    A4_flag = True
+    # This needs to be satisfied for theorems 3, 4, 5, 6, 7
+    if not (config.N > 1 and config.h > 0 and np.any(B[0]) and np.any(B[1])):
+        A4_flag = False
+    
+    if not A4_flag:
+        print("Assumption 4 failed")
+        print("N: ", config.N)
+        print("h: ", config.h)
+        print("B1: ", B[0])
+        print("B2: ", B[1])
+        print("delta1: ", delta[0])
+        print("delta2: ", delta[1])
+
+    # Assumption 5: irreducible B, equivalent to saying that the graphs represented by B1 and B2 are strongly connected
+    # this is already satisfied since the matrices are fully connected
+
+    # Assumption 6: stricter sampling parameter upper bound
+    A6_flag = True
+    # This needs to be satisfied for theorems 3, 4, 5, 6, 7
+    for i in range(config.N):
+        row_sum1 = sum(B[0][i])
+        row_sum2 = sum(B[1][i])
+        if not config.h * delta[0][i] + config.h * (row_sum1 + row_sum2) <= 1:
+            A6_flag = False
+        if not config.h * delta[1][i] + config.h * (row_sum1 + row_sum2) <= 1:
+            A6_flag = False
+        
+    if not A6_flag:
+        print("Assumption 6 failed")
+        print("N: ", config.N)
+        print("h: ", config.h)
+        print("B1: ", B[0])
+        print("B2: ", B[1])
+        print("delta1: ", delta[0])
+        print("delta2: ", delta[1])
+    
+    print("All assumptions satisfied")
