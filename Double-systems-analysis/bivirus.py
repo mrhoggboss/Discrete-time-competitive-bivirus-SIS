@@ -181,56 +181,66 @@ def check_basic_assumptions(x1, x2, B, delta, config):
 
 # TODO: implement individual checks for each theorem instead of single check for all
 
-def check_theorem_assumptions(B, delta, config, x1_bar, x2_bar):
+def check_theorem_2(B, delta, config):
     """
-    Check the assumptions of the theorems, i.e., Theorems 2, 3, 4, 6, 7
-    
-    B: list of two matrices, each of size N x N
-    delta: list of two vectors, each of size N
-    config: SimulationConfig object
-    x1_bar: size N vector representing equilibrium infection levels of virus 1
-    x2_bar: size N vector representing equilibrium infection levels of virus 2
+    returns true if the model satisfies the assumptions of theorem 2
+    false otherwise
+    """
+    spectral_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + config.h * B[0])))
+    spectral_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + config.h * B[1])))
+    print('spectral radius 1 is '+str(spectral_radius_1))
+    print('spectral radius 2 is '+str(spectral_radius_2))
+    return (spectral_radius_1 <= 1 and spectral_radius_2 <= 1)
 
-    returns a float that is the theorem number that the model satisfies the assumptions for:
-    2: theorem 2
-    3: theorem 3
+def check_theorem_3(B, delta, config):
+    """
+    returns a float where
+    3.1: theorem 3, virus 1 survives, virus 2 dies out
+    3.2: theorem 3, virus 1 dies out, virus 2 survives
+    0 otherwise
+    """
+    spectral_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + config.h * B[0])))
+    spectral_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + config.h * B[1])))
+    if (spectral_radius_1 > 1 and spectral_radius_2 <= 1):
+        return 3.1
+    elif (spectral_radius_1 <= 1 and spectral_radius_2 > 1):
+        return 3.2
+    else:
+        return 0
+
+def check_theorem_4(B, delta, config, x1_bar, x2_bar):
+    """
+    returns a float where:
     4.1: theorem 4, virus 1 stable, virus 2 stable
     4.2: theorem 4, virus 1 stable, virus 2 unstable
     4.3: theorem 4, virus 1 unstable, virus 2 stable
     4.4: theorem 4, virus 1 unstable, virus 2 unstable
-
+    0 otherwise
     """
-    spectral_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + config.h * B[0])))
-    spectral_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + config.h * B[1])))
-
-    print('spectral radius 1 is '+str(spectral_radius_1))
-    print('spectral radius 2 is '+str(spectral_radius_2))
-
-    if spectral_radius_1 <= 1 and spectral_radius_2 <= 1:
-        return 2
-    elif spectral_radius_1 > 1 and spectral_radius_2 <= 1:
-        return 3
-    elif spectral_radius_1 <= 1 and spectral_radius_2 > 1:
-        return 3
-    else:
-        det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[0])))
-        det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[1])))
-        
-        print('det radius 1 is '+str(det_radius_1))
-        print('det radius 2 is '+str(det_radius_2))
-
-        if det_radius_1 <= 1 and det_radius_2 <= 1:
-            label = 4.1
-            # 1) both (x_1, 0) and (0, x_2) are stable
-            # 2) also exists (x_1hat, x_2hat) which is unstable (theorem 5, not validated in simulations)
-        elif det_radius_1 > 1 and det_radius_2 > 1:
-            label = 4.4
-            # 1) both (x_1, 0) and (0, x_2) are unstable
-        elif det_radius_1 <= 1 and det_radius_2 > 1:
-            label = 4.2
-            # 1) (x_1, 0) stable 
-            # 2) (0, x_2) unstable
-        elif det_radius_1 > 1 and det_radius_2 <= 1:
-            label = 4.3
-            # 1) (x_1, 0) unstable 
-            # 2) (0, x_2) stable
+    if check_theorem_2(B, delta, config) or check_theorem_3(B, delta, config) != 0:
+        return 0
+    
+    # calculate the spectral radii used to determine the stability of endemic equilibria.
+    det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[0])))
+    det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[1])))
+    
+    print('det radius 1 is '+str(det_radius_1))
+    print('det radius 2 is '+str(det_radius_2))
+    
+    if det_radius_1 <= 1 and det_radius_2 <= 1:
+        label = 4.1
+        # 1) both (x_1, 0) and (0, x_2) are stable
+        # 2) also exists (x_1hat, x_2hat) which is unstable (theorem 5, not validated in simulations)
+    elif det_radius_1 > 1 and det_radius_2 > 1:
+        label = 4.4
+        # 1) both (x_1, 0) and (0, x_2) are unstable
+    elif det_radius_1 <= 1 and det_radius_2 > 1:
+        label = 4.2
+        # 1) (x_1, 0) stable 
+        # 2) (0, x_2) unstable
+    elif det_radius_1 > 1 and det_radius_2 <= 1:
+        label = 4.3
+        # 1) (x_1, 0) unstable 
+        # 2) (0, x_2) stable
+    
+    return label
