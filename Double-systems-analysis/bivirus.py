@@ -90,16 +90,14 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
             col.plot(x1_history, color='b')
             col.plot(x2_history, color='r')
 
-            col.text(iterations, x1_history[-1], f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
-            col.text(iterations, x2_history[-1], f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
+            # col.text(iterations, x1_history[-1], f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
+            # col.text(iterations, x2_history[-1], f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
             
             col.set_ylim(0.01, 1)
             col.set_yscale(yscale)
-            col.set(xlabel='Time step', ylabel='Avg. Infection level')
+            col.set(xlabel='Time step', ylabel='Avg. Inf. level')
             col.label_outer()
     ax = plt.gca()
-    plt.xlabel('Time step')
-    plt.ylabel(f'Avg Infection level')
         
     fig.suptitle(f'Average Infection level VS Time')
     plt.show()
@@ -112,32 +110,32 @@ def check_basic_assumptions(x1, x2, B, delta, config):
     
     # This needs to be satisfied for all theorems
     for i in range(config.N):
-        assert(0 <= x1[i] <= 1, "A1, x1[i] out of bounds")
-        assert(0 <= x2[i] <= 1, "A1, x2[i] out of bounds")
-        assert(0 <= 1 - x1[i] - x2[i] <= 1, "A1, healthy[i] out of bounds")
+        assert 0 <= x1[i] <= 1, "A1, x1[i] out of bounds"
+        assert 0 <= x2[i] <= 1, "A1, x2[i] out of bounds"
+        assert 0 <= 1 - x1[i] - x2[i] <= 1, "A1, healthy[i] out of bounds"
     
     # Assumption 2: Non-negative B and deltas
 
     # This needs to be satisfied for all theorems
     for i in range(config.N):
-        assert(delta[0][i] >= 0, "A2, delta[0][i] negative")
-        assert(delta[1][i] >= 0, "A2, delta[1][i] negative")
+        assert delta[0][i] >= 0, "A2, delta[0][i] negative"
+        assert delta[1][i] >= 0, "A2, delta[1][i] negative"
     for i in range(config.N):
         for j in range(config.N):
-            assert(B[0][i][j] >= 0, "A2, B[0][i][j] negative")
-            assert(B[1][i][j] >= 0, "A2, B[1][i][j] negative")
+            assert B[0][i][j] >= 0, "A2, B[0][i][j] negative"
+            assert B[1][i][j] >= 0, "A2, B[1][i][j] negative"
     
     # Assumption 3: sampling parameter upper bound
 
     # This needs to be satisfied for all theorems
     for i in range(config.N):
-        assert(config.h * delta[0][i] < 1, "A3, h * delta[0][i] >= 1")
-        assert(config.h * delta[1][i] < 1, "A3, h * delta[1][i] >= 1")
+        assert config.h * delta[0][i] < 1, "A3, h * delta[0][i] >= 1"
+        assert config.h * delta[1][i] < 1, "A3, h * delta[1][i] >= 1"
     
     for i in range(config.N):
         row_sum1 = sum(B[0][i])
         row_sum2 = sum(B[1][i])
-        assert(config.h * (row_sum1 + row_sum2) <= 1, "A3, h * (row_sum1 + row_sum2) > 1")
+        assert config.h * (row_sum1 + row_sum2) <= 1, "A3, h * (row_sum1 + row_sum2) > 1"
     
     # Assumption 4: nonzero B, sampling parameter and nontrivial dimension
     A4_flag = True
@@ -221,8 +219,8 @@ def check_theorem_4(B, delta, config, x1_bar, x2_bar):
         return 0
     
     # calculate the spectral radii used to determine the stability of endemic equilibria.
-    det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[0])))
-    det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[1])))
+    det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[1])))
+    det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[0])))
     
     print('det radius 1 is '+str(det_radius_1))
     print('det radius 2 is '+str(det_radius_2))
