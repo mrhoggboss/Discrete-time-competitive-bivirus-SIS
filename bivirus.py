@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import networkx as nx
+import gravis as gv
 # Some useful functions for the simulation
 
 class SimulationConfig:
