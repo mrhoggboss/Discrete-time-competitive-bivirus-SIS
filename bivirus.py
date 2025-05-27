@@ -206,7 +206,7 @@ def check_theorem_3(B, delta, config):
     else:
         return 0
 
-def check_theorem_4(B, delta, config, x1_bar, x2_bar):
+def check_theorem_4(x1_bar, x2_bar, B, delta, config):
     """
     returns a float where:
     4.1: theorem 4, virus 1 stable, virus 2 stable
@@ -215,7 +215,7 @@ def check_theorem_4(B, delta, config, x1_bar, x2_bar):
     4.4: theorem 4, virus 1 unstable, virus 2 unstable
     0 otherwise
     """
-    if check_theorem_2(B, delta, config) or check_theorem_3(B, delta, config) != 0:
+    if check_theorem_2(B, delta, config) or (check_theorem_3(B, delta, config) != 0):
         return 0
     
     # calculate the spectral radii used to determine the stability of endemic equilibria.
