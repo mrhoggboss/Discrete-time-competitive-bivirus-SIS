@@ -5,14 +5,23 @@ import gravis as gv
 # Some useful functions for the simulation
 
 class SimulationConfig:
-    def __init__(self, N=20, h=0.1, W=2, iterations=1000, tolerance=1e-3):
+    def __init__(self, N=20, h=0.1, threshold = 1, W=2, iterations=1000, tolerance=1e-3):
         self.N = N
         self.h = h
+        self.threshold = threshold
         self.W = W
         self.iterations = iterations # max iterations before stopping
         self.tolerance = tolerance # tolerance for convergence
 
 def run_simulation(x1, x2, B, delta, config):
+    '''
+    runs the simulation for two viruses with the given parameters
+    x1: initial infection levels for virus 1
+    x2: initial infection levels for virus 2
+    B: transmission matrices for the two viruses, each of shape (N, N)
+    delta: healing rates for the two viruses, each of shape (N,)
+    config: SimulationConfig object containing simulation parameters
+    '''
     N, h, iterations = config.N, config.h, config.iterations
     x1_history, x2_history = [x1.copy()], [x2.copy()]
     x1_avg_history, x2_avg_history = [np.average(x1)], [np.average(x2)]
@@ -26,7 +35,7 @@ def run_simulation(x1, x2, B, delta, config):
         x1_avg_history.append(np.average(x[0]))
         x2_avg_history.append(np.average(x[1]))
         if np.linalg.norm(x1_history[-1] - x1_history[-2]) < config.tolerance and np.linalg.norm(x2_history[-1] - x2_history[-2]) < config.tolerance:
-            print(f"Converged at iteration {i}")
+            print(f"Main loop Converged at iteration {i}")
             break
     if i == iterations - 1:
         print("Reached max iterations and did not converge")
@@ -39,6 +48,32 @@ def run_simulation(x1, x2, B, delta, config):
         "final_x1": x1_history[-1],
         "final_x2": x2_history[-1]
     }
+
+def x_bar(x1, B1, delta, config):
+    '''
+        finds the single virus equilibrium point for the given parameters. Treats the other virus as nonexistent.
+        x1: initial infection levels for the virus
+        B1: transmission matrix for that particular virus
+        delta: healing rates for the population
+        config: SimulationConfig object
+    '''
+    N, h, iterations = config.N, config.h, config.iterations
+    x_history = [x1.copy()]
+    x = x1.copy()
+
+    # Simulation loop
+    for _ in range(iterations):
+        x = x + h * ((np.eye(N) - np.diag(x)) @ B1 - np.diag(delta)) @ x
+        # x = np.clip(x, 0, 1)  # Ensure infection levels are between 0 and 1
+        assert(np.all(x >= 0) and np.all(x <= 1)), "Infection levels out of bounds"
+        x_history.append(x.copy())
+        if np.linalg.norm(x_history[-1] - x_history[-2]) < config.tolerance:
+            print(f"x_bar Converged at iteration {_}")
+            break
+    if _ == iterations - 1:
+        print("Reached max iterations and did not converge")
+    
+    return x_history[-1]
 
 def random_parameters(config):
     '''
@@ -69,10 +104,12 @@ def plot_average_infection(x1_avg_history, x2_avg_history, title="Average Infect
     plt.text(len(x2_avg_history)-1, x2_avg_history[-1], f"{x2_avg_history[-1]:.2f}", color='r', fontsize=10, va='bottom')
     plt.show()
 
-def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
+def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_bar_avg=None, x2_bar_avg=None):
     '''
     x1_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 1
     x2_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 2
+    x1_bar: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
+    x2_bar: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
 
     plots a 3x3 grid of subplots, each showing the average infection levels for virus 1 and virus 2 over time under a different intial condition
     '''
@@ -91,8 +128,11 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
             col.plot(x1_history, color='b')
             col.plot(x2_history, color='r')
 
-            # col.text(iterations, x1_history[-1], f"({round(x1_history[-1], 2)})", fontsize=8, color = 'b')
-            # col.text(iterations, x2_history[-1], f"({round(x2_history[-1], 2)})", fontsize=8, color = 'r')
+            # Plot equilibrium lines if provided
+            if x1_bar_avg is not None:
+                col.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
+            if x2_bar_avg is not None:
+                col.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
             
             col.set_ylim(0.01, 1)
             col.set_yscale(yscale)
@@ -101,6 +141,11 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log'):
     ax = plt.gca()
         
     fig.suptitle(f'Average Infection level VS Time')
+    # Add legend only to the first subplot if equilibrium lines are plotted
+    if x1_bar_avg is not None or x2_bar_avg is not None:
+        handles, labels = axs[0,2].get_legend_handles_labels()
+        if handles:
+            axs[0,2].legend(loc='upper right')
     plt.show()
 
 def check_basic_assumptions(x1, x2, B, delta, config):
@@ -207,7 +252,7 @@ def check_theorem_3(B, delta, config):
     else:
         return 0
 
-def check_theorem_4(x1_bar, x2_bar, B, delta, config):
+def check_theorem_4(x1, x2, B, delta, config):
     """
     returns a float where:
     4.1: theorem 4, virus 1 stable, virus 2 stable
@@ -219,6 +264,8 @@ def check_theorem_4(x1_bar, x2_bar, B, delta, config):
     if check_theorem_2(B, delta, config) or (check_theorem_3(B, delta, config) != 0):
         return 0
     
+    x1_bar = x_bar(x1, B[0], delta[0], config)
+    x2_bar = x_bar(x2, B[1], delta[1], config)
     # calculate the spectral radii used to determine the stability of endemic equilibria.
     det_radius_1 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[1]) + (np.eye(config.N) - np.diag(x1_bar)) @ B[1])))
     det_radius_2 = np.max(np.abs(np.linalg.eigvals(np.eye(config.N) - config.h * np.diag(delta[0]) + (np.eye(config.N) - np.diag(x2_bar)) @ B[0])))
