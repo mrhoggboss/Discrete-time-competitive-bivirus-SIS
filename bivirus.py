@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import gravis as gv
+import networkx as nx
 # Some useful functions for the simulation
 
 class SimulationConfig:
@@ -52,7 +53,7 @@ def run_simulation(x1, x2, B, delta, config):
 def x_bar(x1, B1, delta, config):
     '''
         finds the single virus equilibrium point for the given parameters. Treats the other virus as nonexistent.
-        x1: initial infection levels for the virus
+        x1: initial infection levels for the virus - The outcome of the simulation is independent of this value
         B1: transmission matrix for that particular virus
         delta: healing rates for the population
         config: SimulationConfig object
@@ -148,6 +149,51 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_ba
             axs[0,2].legend(loc='upper right')
     plt.show()
 
+def plot_simulation_1by3(x1_avg_histories, x2_avg_histories, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None):
+    '''
+    x1_avg_histories: list of 3 lists, each inner list is a histogram of average infection levels for virus 1
+    x2_avg_histories: list of 3 lists, each inner list is a histogram of average infection levels for virus 2
+    x1_bar: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
+    x2_bar: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
+
+    plots a 1x3 grid of subplots, each showing the average infection levels for virus 1 and virus 2 over time under a different intial condition
+    '''
+    # retrieve iterations
+    iterations = len(x1_avg_histories[0]) - 1
+
+    # Plot the results  
+    fig, axs = plt.subplots(nrows=3, ncols=1)
+
+    for idx, ax in enumerate(axs):
+        x1_history = x1_avg_histories[idx]
+        x2_history = x2_avg_histories[idx]
+        line1, = ax.plot(x1_history, color='b', label='Virus 1')
+        line2, = ax.plot(x2_history, color='r', label='Virus 2')
+
+        # Plot equilibrium lines if provided
+        if x1_bar_avg is not None:
+            ax.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
+        if x2_bar_avg is not None:
+            ax.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
+        
+        ax.set_ylim(0.01, 1)
+        ax.set_yscale(yscale)
+        ax.set(xlabel='Time step', ylabel='Avg. Inf. level')
+        ax.label_outer()
+    
+    if title is not None:
+        fig.suptitle(title)
+    # fig.suptitle(f'Average Infection level VS Time')
+    # Add legend only to the last subplot if equilibrium lines are plotted
+    if x1_bar_avg is not None or x2_bar_avg is not None:
+        handles, labels = axs[-1].get_legend_handles_labels()
+        if handles:
+            axs[0].legend(loc='upper right')
+    else:
+        # Add legend for Virus 1 and Virus 2 only
+        axs[0].legend(['Virus 1', 'Virus 2'], loc='upper right')
+    plt.show()
+
 def check_basic_assumptions(x1, x2, B, delta, config):
     """
     Check the basic assumptions of the paper, i.e., Assumptions 1-6
@@ -199,7 +245,12 @@ def check_basic_assumptions(x1, x2, B, delta, config):
         print("delta2: ", delta[1])
 
     # Assumption 5: irreducible B, equivalent to saying that the graphs represented by B1 and B2 are strongly connected
-    # this is already satisfied since the matrices are fully connected
+    B1 = nx.from_numpy_array(B[0], create_using=nx.DiGraph) 
+    B2 = nx.from_numpy_array(B[1], create_using=nx.DiGraph)
+
+    # check for strong connectivity
+    assert nx.is_strongly_connected(B1), "A5, B1 is not strongly connected"
+    assert nx.is_strongly_connected(B2), "A5, B2 is not strongly connected"
 
     # Assumption 6: stricter sampling parameter upper bound
     A6_flag = True
