@@ -129,6 +129,9 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_ba
             col.plot(x1_history, color='b')
             col.plot(x2_history, color='r')
 
+            col.set_xlim(left=0)      # make the left bound exactly 0
+            col.margins(x=0)          # turn off the default 5 % padding
+
             # Plot equilibrium lines if provided
             if x1_bar_avg is not None:
                 col.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
@@ -169,6 +172,9 @@ def plot_simulation_1by3(x1_avg_histories, x2_avg_histories, yscale='log', title
         x2_history = x2_avg_histories[idx]
         line1, = ax.plot(x1_history, color='b', label='Virus 1')
         line2, = ax.plot(x2_history, color='r', label='Virus 2')
+
+        ax.set_xlim(left=0)      # make the left bound exactly 0
+        ax.margins(x=0)          # turn off the default 5 % padding
 
         # Plot equilibrium lines if provided
         if x1_bar_avg is not None:
@@ -214,6 +220,9 @@ def plot_simulation_1by2(x1_avg_histories, x2_avg_histories, yscale='log', title
         x2_history = x2_avg_histories[idx]
         line1, = ax.plot(x1_history, color='b', label='Virus 1')
         line2, = ax.plot(x2_history, color='r', label='Virus 2')
+
+        ax.set_xlim(left=0)      # make the left bound exactly 0
+        ax.margins(x=0)          # turn off the default 5 % padding
 
         # Plot equilibrium lines if provided
         if x1_bar_avg is not None:
