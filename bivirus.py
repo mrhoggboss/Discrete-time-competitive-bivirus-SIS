@@ -328,8 +328,6 @@ def check_basic_assumptions(x1, x2, B, delta, config):
     
     print("All assumptions satisfied")
 
-# TODO: implement individual checks for each theorem instead of single check for all
-
 def check_theorem_2(B, delta, config):
     """
     returns true if the model satisfies the assumptions of theorem 2
@@ -395,3 +393,39 @@ def check_theorem_4(x1, x2, B, delta, config):
         # 2) (0, x_2) stable
     
     return label
+
+def find_C(z):
+    '''
+    finds a matrix C such that:
+    1. C @ z = z
+    2. C is irreducible
+    3. C has spectral radius 1
+
+    input: z, the single virus equilibrium of the first virus
+    '''
+    N,  = z.shape
+    pi = z / np.sum(z)
+    C = np.outer(pi, np.ones(N))
+    return C
+
+def verify_C(z, C, tol=1e-6):
+    '''
+    verifies whether a given single virus equilibrium z and a matrix C satisfies the constraints given in Theorem 7
+    '''
+    # 1. z is a eigenvector of C with eigenvalue 1
+    assert np.allclose(C @ z, z, atol=tol), "Cz != z"
+    print("C @ z is: " + str(C @ z))
+    print("z is: " + str(z))
+    # 2. C is irreducible
+    import networkx as nx
+    def is_irreducible(A: np.ndarray) -> bool:
+        G = nx.from_numpy_array(A, create_using=nx.DiGraph)
+        G.remove_edges_from([(u, v) for u, v, w in G.edges(data=True) if w["weight"] == 0])
+        return nx.is_strongly_connected(G)
+
+    assert is_irreducible(C), "C is reducible"
+
+    # 3. C has spectral radius = 1
+    assert np.abs(np.max(np.abs(np.linalg.eigvals(C))) - 1) < tol, "C does not have spectral radius 1"
+    print("C has spectral radius: " + str(np.max(np.abs(np.linalg.eigvals(C)))))
+    print("C satisfies the assumptions of Theorem 7")
