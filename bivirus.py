@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import gravis as gv
 import networkx as nx
+import matplotlib.patches as mpatches
 # Some useful functions for the simulation
 
 class SimulationConfig:
@@ -462,3 +463,56 @@ def verify_C(z, C, tol=1e-6):
     assert np.abs(np.max(np.abs(np.linalg.eigvals(C))) - 1) < tol, "C does not have spectral radius 1"
     print("C has spectral radius: " + str(np.max(np.abs(np.linalg.eigvals(C)))))
     print("C satisfies the assumptions of Theorem 7")
+
+def plot_two_networks_piechart_nodes(G1, G2, x1, x2, pos1=None, pos2=None, node_size=300):
+    """
+    plots two networkx graphs as side-by-side subplots, with each node as a pie chart representing:
+    - blue: x1[i]
+    - red: x2[i]
+    - green: 1 - x1[i] - x2[i] (healthy)
+    Args:
+        G1, G2: networkx.Graph or DiGraph
+        x1, x2: array-like, distributions over nodes (must be same length as number of nodes in each graph)
+        pos1, pos2: dict, optional, node positions for plotting
+        node_size: int, optional, node size for plotting
+    """
+    import matplotlib.patches as mpatches
+
+    x1 = np.asarray(x1)
+    x2 = np.asarray(x2)
+    assert x1.shape == x2.shape == (len(G1),)
+    assert x1.shape == (len(G2),)
+    assert np.all(x1 + x2 < 1 + 1e-8), "sum of infection levels exceeds 1 for some nodes"
+
+    if pos1 is None:
+        pos1 = nx.spring_layout(G1, seed=42)
+    if pos2 is None:
+        pos2 = nx.spring_layout(G2, seed=42)
+
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    for ax, G, pos in zip(axs, [G1, G2], [pos1, pos2]):
+        nx.draw_networkx_edges(G, pos, ax=ax, edge_color='gray')
+        for i, (x, y) in enumerate(pos.values()):
+            sizes = [x1[i], x2[i], 1 - x1[i] - x2[i]]
+            colors = ['blue', 'red', 'green']
+            wedges, _ = ax.pie(
+                sizes,
+                colors=colors,
+                radius=np.sqrt(node_size)/200,
+                center=(x, y),
+                frame=True
+            )
+            for wedge in wedges:
+                wedge.set_edgecolor('none')
+        for i, (x, y) in enumerate(pos.values()):
+            ax.text(x, y, str(i), ha='center', va='center', fontsize=8, color='white', weight='bold')
+        ax.set_aspect('equal')
+        ax.axis('off')
+    legend_patches = [
+        mpatches.Patch(color='blue', label='virus 1'),
+        mpatches.Patch(color='red', label='virus 2'),
+        mpatches.Patch(color='green', label='healthy')
+    ]
+    axs[1].legend(handles=legend_patches, loc='upper right')
+    plt.tight_layout()
+    plt.show()
