@@ -248,6 +248,35 @@ def plot_simulation_1by2(x1_avg_histories, x2_avg_histories, yscale='log', title
         axs[0].legend(['Virus 1', 'Virus 2'], loc='upper right')
     plt.show()
 
+def plot_simulation_single(x1_avg_history, x2_avg_history, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None):
+    """
+    Plots the average infection levels for Virus 1 and Virus 2 on a single plot.
+
+    x1_avg_history: list of average infection levels for virus 1
+    x2_avg_history: list of average infection levels for virus 2
+    yscale: 'log' or 'linear'
+    title: optional plot title
+    x1_bar_avg: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
+    x2_bar_avg: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
+    """
+    plt.figure()
+    plt.plot(x1_avg_history, color='b', label='Virus 1')
+    plt.plot(x2_avg_history, color='r', label='Virus 2')
+
+    if x1_bar_avg is not None:
+        plt.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
+    if x2_bar_avg is not None:
+        plt.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
+
+    plt.xlabel('Time step')
+    plt.ylabel('Avg. Inf. level')
+    plt.yscale(yscale)
+    plt.ylim(0.01, 1)
+    if title is not None:
+        plt.title(title)
+    plt.legend(loc='upper right')
+    plt.show()
+
 def check_basic_assumptions(x1, x2, B, delta, config):
     """
     Check the basic assumptions of the paper, i.e., Assumptions 1-6
@@ -355,7 +384,7 @@ def check_theorem_3(B, delta, config):
     else:
         return 0
 
-def check_theorem_4(x1, x2, B, delta, config):
+def check_theorem_4(B, delta, config):
     """
     returns a float where:
     4.1: theorem 4, virus 1 stable, virus 2 stable
@@ -364,6 +393,10 @@ def check_theorem_4(x1, x2, B, delta, config):
     4.4: theorem 4, virus 1 unstable, virus 2 unstable
     0 otherwise
     """
+
+    # note that the result of this function should not depend on the initial conditions x1, x2
+    x1 = 0.1 * np.ones(config.N)
+    x2 = 0.1 * np.ones(config.N)
     if check_theorem_2(B, delta, config) or (check_theorem_3(B, delta, config) != 0):
         return 0
     
