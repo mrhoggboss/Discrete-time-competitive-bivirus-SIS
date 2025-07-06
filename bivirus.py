@@ -92,8 +92,8 @@ def random_parameters(config):
     B1 = np.diag(beta_1) @ A1
     B2 = np.diag(beta_2) @ A2
     return [B1, B2], [delta_1, delta_2]
-
-def plot_average_infection(x1_avg_history, x2_avg_history, title="Average Infection Levels"):
+def plot_average_infection(x1_avg_history, x2_avg_history, title="Average Infection Levels", figsize=(6.4, 4.8)):
+    plt.figure(figsize=figsize)
     plt.plot(x1_avg_history, label="Virus 1", color='b')
     plt.plot(x2_avg_history, label="Virus 2", color='r')
     plt.xlabel("Time step")
@@ -106,21 +106,16 @@ def plot_average_infection(x1_avg_history, x2_avg_history, title="Average Infect
     plt.text(len(x2_avg_history)-1, x2_avg_history[-1], f"{x2_avg_history[-1]:.2f}", color='r', fontsize=10, va='bottom')
     plt.show()
 
-def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_bar_avg=None, x2_bar_avg=None):
+def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_bar_avg=None, x2_bar_avg=None, figsize=(12, 12)):
     '''
     x1_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 1
     x2_avg_histories: list of 9 lists, each inner list is a histogram of average infection levels for virus 2
     x1_bar: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
     x2_bar: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
-
-    plots a 3x3 grid of subplots, each showing the average infection levels for virus 1 and virus 2 over time under a different intial condition
+    figsize: tuple, figure size
     '''
-    # retrieve iterations
     iterations = len(x1_avg_histories[0]) - 1
-
-    # Plot the results  
-    fig, axs = plt.subplots(nrows=3, ncols=3)
-
+    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=figsize)
     idx = 0
     for row in axs:
         for col in row:
@@ -129,127 +124,94 @@ def plot_simulation_3by3(x1_avg_histories, x2_avg_histories, yscale='log', x1_ba
             idx += 1
             col.plot(x1_history, color='b')
             col.plot(x2_history, color='r')
-
-            col.set_xlim(left=0)      # make the left bound exactly 0
-            col.margins(x=0)          # turn off the default 5 % padding
-
-            # Plot equilibrium lines if provided
+            col.set_xlim(left=0)
+            col.margins(x=0)
             if x1_bar_avg is not None:
                 col.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
             if x2_bar_avg is not None:
                 col.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
-            
             col.set_ylim(0.01, 1)
             col.set_yscale(yscale)
             col.set(xlabel='Time step', ylabel='Avg. Inf. level')
             col.label_outer()
-    ax = plt.gca()
-        
     fig.suptitle(f'Average Infection level VS Time')
-    # Add legend only to the first subplot if equilibrium lines are plotted
     if x1_bar_avg is not None or x2_bar_avg is not None:
         handles, labels = axs[0,2].get_legend_handles_labels()
         if handles:
             axs[0,2].legend(loc='upper right')
     plt.show()
 
-def plot_simulation_1by3(x1_avg_histories, x2_avg_histories, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None):
+def plot_simulation_1by3(x1_avg_histories, x2_avg_histories, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None, figsize=(8, 9)):
     '''
     x1_avg_histories: list of 3 lists, each inner list is a histogram of average infection levels for virus 1
     x2_avg_histories: list of 3 lists, each inner list is a histogram of average infection levels for virus 2
     x1_bar: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
     x2_bar: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
-
-    plots a 1x3 grid of subplots, each showing the average infection levels for virus 1 and virus 2 over time under a different intial condition
+    figsize: tuple, figure size
     '''
-    # retrieve iterations
     iterations = len(x1_avg_histories[0]) - 1
-
-    # Plot the results  
-    fig, axs = plt.subplots(nrows=3, ncols=1)
-
+    fig, axs = plt.subplots(nrows=3, ncols=1, figsize=figsize)
     for idx, ax in enumerate(axs):
         x1_history = x1_avg_histories[idx]
         x2_history = x2_avg_histories[idx]
         line1, = ax.plot(x1_history, color='b', label='Virus 1')
         line2, = ax.plot(x2_history, color='r', label='Virus 2')
-
-        ax.set_xlim(left=0)      # make the left bound exactly 0
-        ax.margins(x=0)          # turn off the default 5 % padding
-
-        # Plot equilibrium lines if provided
+        ax.set_xlim(left=0)
+        ax.margins(x=0)
         if x1_bar_avg is not None:
             ax.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
         if x2_bar_avg is not None:
             ax.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
-        
         ax.set_ylim(0.01, 1)
         ax.set_yscale(yscale)
         ax.set(xlabel='Time step', ylabel='Avg. Inf. level')
         ax.label_outer()
-    
     if title is not None:
         fig.suptitle(title)
-    # fig.suptitle(f'Average Infection level VS Time')
-    # Add legend only to the last subplot if equilibrium lines are plotted
     if x1_bar_avg is not None or x2_bar_avg is not None:
         handles, labels = axs[-1].get_legend_handles_labels()
         if handles:
             axs[0].legend(loc='upper right')
     else:
-        # Add legend for Virus 1 and Virus 2 only
         axs[0].legend(['Virus 1', 'Virus 2'], loc='upper right')
     plt.show()
 
-def plot_simulation_1by2(x1_avg_histories, x2_avg_histories, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None):
+def plot_simulation_1by2(x1_avg_histories, x2_avg_histories, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None, figsize=(8, 6)):
     '''
     x1_avg_histories: list of 2 lists, each inner list is a histogram of average infection levels for virus 1
     x2_avg_histories: list of 2 lists, each inner list is a histogram of average infection levels for virus 2
     x1_bar: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
     x2_bar: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
-
-    plots a 1x2 grid of subplots, each showing the average infection levels for virus 1 and virus 2 over time under a different intial condition
+    figsize: tuple, figure size
     '''
-    # retrieve iterations
     iterations = len(x1_avg_histories[0]) - 1
-
-    # Plot the results  
-    fig, axs = plt.subplots(nrows=2, ncols=1)
-
+    fig, axs = plt.subplots(nrows=2, ncols=1, figsize=figsize)
     for idx, ax in enumerate(axs):
         x1_history = x1_avg_histories[idx]
         x2_history = x2_avg_histories[idx]
         line1, = ax.plot(x1_history, color='b', label='Virus 1')
         line2, = ax.plot(x2_history, color='r', label='Virus 2')
-
-        ax.set_xlim(left=0)      # make the left bound exactly 0
-        ax.margins(x=0)          # turn off the default 5 % padding
-
-        # Plot equilibrium lines if provided
+        ax.set_xlim(left=0)
+        ax.margins(x=0)
         if x1_bar_avg is not None:
             ax.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
         if x2_bar_avg is not None:
             ax.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
-        
         ax.set_ylim(0.01, 1)
         ax.set_yscale(yscale)
         ax.set(xlabel='Time step', ylabel='Avg. Inf. level')
         ax.label_outer()
-    
     if title is not None:
         fig.suptitle(title)
-    # fig.suptitle(f'Average Infection level VS Time')
-    # Add legend only to the last subplot if equilibrium lines are plotted
     if x1_bar_avg is not None or x2_bar_avg is not None:
         handles, labels = axs[-1].get_legend_handles_labels()
         if handles:
             axs[0].legend(loc='upper right')
     else:
-        # Add legend for Virus 1 and Virus 2 only
         axs[0].legend(['Virus 1', 'Virus 2'], loc='upper right')
     plt.show()
 
-def plot_simulation_single(x1_avg_history, x2_avg_history, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None):
+def plot_simulation_single(x1_avg_history, x2_avg_history, yscale='log', title=None, x1_bar_avg=None, x2_bar_avg=None, figsize=(8, 3)):
     """
     Plots the average infection levels for Virus 1 and Virus 2 on a single plot.
 
@@ -259,20 +221,21 @@ def plot_simulation_single(x1_avg_history, x2_avg_history, yscale='log', title=N
     title: optional plot title
     x1_bar_avg: (optional) float, equilibrium value for virus 1 to plot as a horizontal line
     x2_bar_avg: (optional) float, equilibrium value for virus 2 to plot as a horizontal line
+    figsize: tuple, figure size
     """
-    plt.figure()
+    plt.figure(figsize=figsize)
     plt.plot(x1_avg_history, color='b', label='Virus 1')
     plt.plot(x2_avg_history, color='r', label='Virus 2')
-
     if x1_bar_avg is not None:
         plt.axhline(y=x1_bar_avg, color='b', linestyle='--', linewidth=1, label='x1_bar')
     if x2_bar_avg is not None:
         plt.axhline(y=x2_bar_avg, color='r', linestyle='--', linewidth=1, label='x2_bar')
-
     plt.xlabel('Time step')
     plt.ylabel('Avg. Inf. level')
     plt.yscale(yscale)
     plt.ylim(0.01, 1)
+    plt.xlim(left=0)
+    plt.margins(x=0)
     if title is not None:
         plt.title(title)
     plt.legend(loc='upper right')
@@ -515,4 +478,56 @@ def plot_two_networks_piechart_nodes(G1, G2, x1, x2, pos1=None, pos2=None, node_
     ]
     axs[1].legend(handles=legend_patches, loc='upper right')
     plt.tight_layout()
+    plt.show()
+
+def plot_bivirus_graph(G1, G2, x1, x2, d0=300, r0=700, figsize=(8, 8)):
+    """
+    Plots the graphical representation of the bi-virus system.
+
+    Parameters:
+    G1, G2: np.ndarray
+        Adjacency matrices for graphs for virus 1 and virus 2.
+    x1, x2: np.ndarray
+        Arrays representing the infection proportions for each agent for virus 1 and virus 2.
+    d0: float
+        Default (smallest) diameter of the node.
+    r0: float
+        Scaling factor for the node diameter.
+    """
+    n = len(x1)
+
+    G1 = nx.from_numpy_array(G1, create_using=nx.DiGraph)
+    G2 = nx.from_numpy_array(G2, create_using=nx.DiGraph)
+
+    pos = nx.spring_layout(G1)
+
+    plt.figure(figsize=figsize)
+
+    for i in range(n):
+        total_infection = x1[i] + x2[i]
+        if np.allclose(total_infection, 0, atol=1e-4):
+            color = [1, 1, 1]  # white for healthy
+            edge_color = 'black'
+        else:
+            red_component = x2[i] / total_infection
+            blue_component = x1[i] / total_infection
+            color = [red_component, 0, blue_component]
+            edge_color = 'black'
+
+        diameter = d0 + total_infection * r0
+        nx.draw_networkx_nodes(G1, pos,
+                               nodelist=[i],
+                               node_color=[color],
+                               edgecolors=edge_color,
+                               node_size=diameter)
+
+    # overlapping two networks
+    nx.draw_networkx_edges(G1, pos, edge_color='gray', width=2, alpha=0.5)
+    nx.draw_networkx_edges(G2, pos, edge_color='green', width=2, alpha=0.3)
+
+    # labels = {i: f'{i}' for i in range(n)}
+    # nx.draw_networkx_labels(G1, pos, labels=labels)
+
+    # plt.title("Bi-virus system representation")
+    plt.axis('off')
     plt.show()
