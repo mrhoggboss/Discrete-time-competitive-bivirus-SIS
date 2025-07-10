@@ -480,7 +480,7 @@ def plot_two_networks_piechart_nodes(G1, G2, x1, x2, pos1=None, pos2=None, node_
     plt.tight_layout()
     plt.show()
 
-def plot_bivirus_graph(G1, G2, x1, x2, d0=300, r0=700, figsize=(8, 8)):
+def plot_bivirus_graph(G1, G2, x1, x2, seed=42, d0=300, r0=700, figsize=(8, 8)):
     """
     Plots the graphical representation of the bi-virus system.
 
@@ -499,7 +499,7 @@ def plot_bivirus_graph(G1, G2, x1, x2, d0=300, r0=700, figsize=(8, 8)):
     G1 = nx.from_numpy_array(G1, create_using=nx.DiGraph)
     G2 = nx.from_numpy_array(G2, create_using=nx.DiGraph)
 
-    pos = nx.spring_layout(G1)
+    pos = nx.spring_layout(G1, seed=seed)
 
     plt.figure(figsize=figsize)
 
@@ -529,5 +529,47 @@ def plot_bivirus_graph(G1, G2, x1, x2, d0=300, r0=700, figsize=(8, 8)):
     # nx.draw_networkx_labels(G1, pos, labels=labels)
 
     # plt.title("Bi-virus system representation")
+    plt.axis('off')
+    plt.show()
+
+def plot_bivirus_graph_simple(G1, G2, x1, x2, seed=42, d0=300, r0=700, figsize=(8, 8), tol=1e-3):
+    """
+    Plots the bi-virus system, coloring all infected nodes magenta, healthy nodes white.
+
+    Parameters:
+    G1, G2: np.ndarray
+        Adjacency matrices for graphs for virus 1 and virus 2.
+    x1, x2: np.ndarray
+        Infection proportions for each agent for virus 1 and virus 2.
+    d0: float
+        Default node diameter.
+    r0: float
+        Scaling factor for node diameter.
+    """
+    n = len(x1)
+    G1 = nx.from_numpy_array(G1, create_using=nx.DiGraph)
+    G2 = nx.from_numpy_array(G2, create_using=nx.DiGraph)
+    pos = nx.spring_layout(G1, seed=seed)
+    plt.figure(figsize=figsize)
+
+    for i in range(n):
+        total_infection = x1[i] + x2[i]
+        if abs(total_infection) < tol:
+            color = [1, 1, 1]  # white for healthy
+        elif abs(x2[i]) < tol and abs(x1[i]) >= tol:
+            color = [0, 0, 1]  # blue for virus 1
+        elif abs(x1[i]) < tol and abs(x2[i]) >= tol:
+            color = [1, 0, 0]  # red for virus 2
+        else:
+            color = [1, 0, 1]  # magenta for coexistence
+        diameter = d0 + total_infection * r0
+        nx.draw_networkx_nodes(G1, pos,
+                               nodelist=[i],
+                               node_color=[color],
+                               edgecolors='black',
+                               node_size=diameter)
+
+    nx.draw_networkx_edges(G1, pos, edge_color='gray', width=2, alpha=0.5)
+    nx.draw_networkx_edges(G2, pos, edge_color='green', width=2, alpha=0.3)
     plt.axis('off')
     plt.show()
